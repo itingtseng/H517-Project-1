@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>D3: Time axis, prettier</title>
+		<script type="text/javascript" src="d3.js"></script>
+		<style type="text/css">
+			rect:hover {
+				cursor: pointer;
+				fill: orange;
+			}	
+
+
+			#tooltip {
+				position: absolute;
+				width: 200px;
+				height: auto;
+				padding: 10px;
+				background-color: white;
+				-webkit-border-radius: 10px;
+				-moz-border-radius: 10px;
+				border-radius: 10px;
+				-webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+				-moz-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+				box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+				pointer-events: none;
+			}
+			
+			#tooltip.hidden {
+				display: none;
+			}
+			
+			#tooltip p {
+				margin: 0;
+				font-family: sans-serif;
+				font-size: 16px;
+				line-height: 20px;
+			}	
+		</style>
+	</head>
+	<body>
+		<div id="tooltip" class="hidden">
+			<p><strong>Date</strong></p>
+			<p><span id="date">100</span></p>
+		</div>
+		<script type="text/javascript">
+
+			//Width and height
+			var w = 1024;
+			var h = 768;
+			var padding = 40;
+			
+			var dataset, xScale, yScale, xAxis, yAxis;  //Empty, for now
+
+			//For converting strings to Dates
+			var parseTime = d3.timeParse("%m/%d/%y");
+
+			//For converting Dates to strings
+			var formatTime = d3.timeFormat("%B %e");
+
+			//Function for converting CSV values from strings to Dates and numbers
+			var rowConverter = function(d) {
+				return {
+					date: parseTime(d.date),
+					deaths: parseInt(d.deaths)
+				};
+			}
+
+			//Load in the data
+			d3.csv("deathdays.csv", rowConverter, function(data) {
+
+				//Copy data into global dataset
+				dataset = data;
+
+				//Discover start and end dates in dataset
+				var startDate = d3.min(dataset, function(d) { return d.date; });
+				var endDate = d3.max(dataset, function(d) { return d.date; });
+
+				//Create scale functions
+				xScale = d3.scaleTime()
+							   .domain([
+									d3.timeDay.offset(startDate, -1),  //startDate minus one day, for padding
+									d3.timeDay.offset(endDate, 1)	  //endDate plus one day, for padding
+								])
+							   .range([padding, w - padding]);
+
+				yScale = d3.scaleLinear()
+							   .domain([
+									0,  //Because I want a zero baseline
+									d3.max(dataset, function(d) { return d.deaths; })
+								])
+							   .range([h - padding, padding]);
+
+				//Define X axis
+				xAxis = d3.axisBottom()
+								  .scale(xScale)
+								  .ticks(9)
+								  .tickFormat(formatTime);
+
+				//Define Y axis
+				yAxis = d3.axisLeft()
+								  .scale(yScale)
+								  .ticks(10);
+
+				//Create SVG element
+				var svg = d3.select("body")
+							.append("svg")
+							.attr("width", w)
+							.attr("height", h);
+
+				//Generate guide lines
+				svg.selectAll("rect")
+				   .data(dataset)
+				   .enter()
+				   .append("rect")
+				   .attr("x", function(d) {
+				   		return xScale(d.date);
+				   })
+				   .attr("y", function(d) {
+			   		    return yScale(d.deaths);
+			       })
+				   .attr("width", w/data.length)
+			       .attr("height", function(d) {
+			   		    return h - yScale(d.deaths)-padding;
+			       })
+			       .attr("fill", function(d) {
+					    return "rgb(0, 0, " + Math.round(yScale(d.deaths)) + ")";
+			       })
+			       
+
+			       .on("mouseover", function(d) {
+
+					//Get this bar's x/y values, then augment for the tooltip
+					var xPosition = parseFloat(d3.select(this).attr("x")) + w/data.length / 2;
+					var yPosition = parseFloat(d3.select(this).attr("y")) / 2 + h / 2;
+
+					//Update the tooltip position and value
+					d3.select("#tooltip")
+						.style("left", xPosition + "px")
+						.style("top", yPosition + "px")						
+						.select("#date")
+						.text(formatTime(d.date));
+			   
+					//Show the tooltip
+					d3.select("#tooltip").classed("hidden", false);
+
+			   })
+			   .on("mouseout", function() {
+			   
+					//Hide the tooltip
+					d3.select("#tooltip").classed("hidden", true);
+					
+			   })
+
+			   svg.selectAll("text")
+			          .data(dataset)
+			          .enter()
+			          .append("text")
+			          .text(function(d) {
+			   		    return parseInt(d.deaths);
+			       })
+			          .attr("text-anchor", "middle")
+			          .attr("x", function(d) {
+			   		    return xScale(d.date) + (w / dataset.length) / 2;
+  			       })
+			          .attr("y", function(d) {
+			   	 	    return yScale(d.deaths) - 14;
+			       })
+			          .attr("font-family", "sans-serif")
+			          .attr("font-size", "11px")
+			          .attr("fill", "black");
+	   			
+	   			//Create X axis
+	   			svg.append("g")
+	   				.attr("class", "axis")
+	   				.attr("transform", "translate(0," + (h - padding) + ")")
+	   				.call(xAxis);
+	   			
+	   			//Create Y axis
+	   			svg.append("g")
+	   				.attr("class", "axis")
+	   				.attr("transform", "translate(" + padding + ",0)")
+	   				.call(yAxis);
+
+			});
+			
+		</script>
+	</body>
+</html>

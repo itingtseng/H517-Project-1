@@ -2,48 +2,1112 @@
 <html lang="en">
 
 <head>
-    <meta charset="utf-8">
-    <title>D3: Loading GeoJSON data and generating SVG paths</title>
-    <script type="text/javascript" src="d3.js"></script>
-    <style type="text/css">
-    /* No style rules here yet */
-    </style>
+	<meta charset="utf-8">
+	<title>D3: Loading GeoJSON data and generating SVG paths</title>
+	<script type="text/javascript" src="d3.js"></script>
+	<script src="https://d3js.org/d3-time.v1.min.js"></script>
+	<script src="https://d3js.org/d3-time-format.v2.min.js"></script>
+	<style type="text/css">
+		.pan rect,
+		.zoom rect {
+			fill: black;
+			opacity: 0.2;
+		}
+
+		.zoom rect {
+			rx: 5;
+			/* Rounded corners */
+			ry: 5;
+		}
+
+		.pan text,
+		.zoom text {
+			fill: black;
+			font-size: 18px;
+			text-anchor: middle;
+		}
+
+		.pan:hover rect,
+		.pan:hover text,
+		.zoom:hover rect,
+		.zoom:hover text {
+			fill: blue;
+		}
+
+		rect:hover {
+			cursor: pointer;
+			fill: orange;
+		}
+
+
+		#tooltip {
+			position: absolute;
+			width: 200px;
+			height: auto;
+			padding: 10px;
+			background-color: white;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			-webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+			-moz-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+			box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+			pointer-events: none;
+		}
+
+		#tooltip.hidden {
+			display: none;
+		}
+
+		#tooltip p {
+			margin: 0;
+			font-family: sans-serif;
+			font-size: 16px;
+			line-height: 20px;
+		}
+
+		h3{
+			font-family: sans-serif;
+		}
+	</style>
 </head>
 
 <body>
-    <script src="https://d3js.org/d3.v3.min.js"></script>
-    <script src="https://d3js.org/topojson.v1.min.js"></script>
-    <script type="text/javascript">
-    //Width and height
-    var w = 500;
-    var h = 300;
+	<div>
+		<div style="float: left;">
+			<h3>Dr. John Snow's map of London's 1854 cholera epidemic</h3>
+			<svg width="512" height="512" id="svg1"></svg>
+		</div>
+		<div style="float: right;">
+			<h3>By date</h3>
+		    <svg width="880" height="512" id="svg2"></svg>
+		</div>
+	</div>
+	<div style="float: left;">
+		<h3>By gender</h3>
+		<svg width="150" height="250" id="svg3"></svg>
+	</div>
+	<div style="float: left;">
+		<h3>By age</h3>
+		<svg width="350" height="250" id="svg4"></svg>
+	</div>
+	<div style="float: left;">
+		<h3>Male</h3>
+		<svg width="350" height="250" id="svg5"></svg>
+	</div>
+	<div style="float: left;">
+		<h3>Female</h3>
+		<svg width="350" height="250" id="svg6"></svg>
+	</div>
+	<div id="tooltip" class="hidden">
+		<p><strong>Date</strong></p>
+		<p><span id="date">100</span></p>
+	</div>
+	<script type="text/javascript">
 
-    //Define path generator, using the Albers USA projection
-    var path = d3.geoPath()
-        .projection(d3.geoAlbersUsa());
+		//Width and height
+		var w = 512;
+		var h = 512;
 
-    //Create SVG element
-    var svg = d3.select("body")
-        .append("svg")
-        .attr("width", w)
-        .attr("height", h);
+		var pJson
 
-    //Load in GeoJSON data
-    d3.json("streets.json", function(json) {
+		//Define map projection
+		var projection = d3.geoMercator()
+			.translate([0, 0])
 
-        //Bind data and create one path per GeoJSON feature
-        svg.selectAll("path")
-            .data(json.features)
-            .enter()
-            .append("path")
-            .attr("d", path)
-            .style({
-                stroke: '#0000ff',
-                'stroke-width': '2px'
-            });
+		//Define path generator
+		var path = d3.geoPath()
+			.projection(projection);
 
-    });
-    </script>
+		//Create SVG element
+		var svg1 = d3.select("#svg1")
+		svg1.append("svg")
+			.attr("width", w)
+			.attr("height", h);
+
+		//Define what to do when panning or zooming
+		var zooming = function (d) {
+
+			//Log out d3.event.transform, so you can see all the goodies inside
+			//console.log(d3.event.transform);
+
+			//New offset array
+			var offset = [d3.event.transform.x, d3.event.transform.y];
+
+			//Calculate new scale
+			var newScale = d3.event.transform.k * 2000;
+
+			//Update projection with new offset and scale
+			projection.translate(offset)
+				.scale(newScale);
+
+			//Update all paths and circles
+			svg1.selectAll("path")
+				.attr("d", path);
+
+			svg1.selectAll("circle")
+				.attr("cx", function (d) {
+					return projection([d.x, d.y])[0];
+				})
+				.attr("cy", function (d) {
+					return projection([d.x, d.y])[1];
+				});
+
+			svg1.selectAll("rect")
+				.attr("x", function (d) {
+					return projection([d.x, d.y])[0];
+				})
+				.attr("y", function (d) {
+					return projection([d.x, d.y])[1];
+				});
+
+		}
+
+		//Then define the zoom behavior
+		var zoom = d3.zoom()
+			.on("zoom", zooming);
+		//The center of the country, roughly
+		var center = projection([154, 81]);
+
+		//Create a container in which all zoom-able elements will live
+		var map = svg1.append("g")
+			.attr("id", "map")
+			.call(zoom)  //Bind the zoom behavior
+			.call(zoom.transform, d3.zoomIdentity  //Then apply the initial transform
+				.translate(w / 2, h / 2)
+				.scale(1)
+				.translate(-center[0], -center[1]));
+
+		//Create a new, invisible background rect to catch drag events
+		map.append("rect")
+			.attr("x", 0)
+			.attr("y", 0)
+			.attr("width", w)
+			.attr("height", h)
+			.attr("opacity", 0);
+
+		//Load in GeoJSON data
+		d3.json("map1.json", function (json) {
+
+			//Bind data and create one path per GeoJSON feature
+			map.selectAll("path")
+				.data(json.features)
+				.enter()
+				.append("path")
+				.attr("d", path)
+				.style("stroke", "#000")
+				.style("fill", "#fff");
+
+			//Load in cities data
+			d3.csv("pumps.csv", function (data) {
+
+				map.selectAll("circle")
+					.data(data)
+					.enter()
+					.append("circle")
+					.attr("cx", function (d) {
+						return projection([d.x, d.y])[0];
+					})
+					.attr("cy", function (d) {
+						return projection([d.x, d.y])[1];
+					})
+					.attr("r", 6)
+					.style("fill", "orange")
+					.style("stroke", "yellow")
+					.append("title")			//Simple tooltip
+			});
+
+			//Load in cities data
+			d3.csv("map-deaths_age_sex.csv", function (data) {
+
+				pJson = data
+
+				map.selectAll("circle")
+					.data(data)
+					.enter()
+					.append("circle")
+					.attr("cx", function (d) {
+						return projection([d.x, d.y])[0];
+					})
+					.attr("cy", function (d) {
+						return projection([d.x, d.y])[1];
+					})
+					.attr("r", 3)
+					.attr("fill", function (d, i) {
+						if(d.gender == 1){
+							return "rgb(" + d.age*2*40 + ", " + d.age*40 + ", " + d.age*40 + ")";
+						} else {
+							return "rgb(" + d.age*40 + ", " + d.age*40 + ", " + d.age*2*40 + ")";
+						}
+
+					})
+					.append("title")
+				//Simple tooltip
+				createPanButtons();
+				createZoomButtons();
+
+			});
+		})
+
+		//Create panning buttons
+		var createPanButtons = function () {
+
+			//Create the clickable groups
+
+			//North
+			var north = svg1.append("g")
+				.attr("class", "pan")	//All share the 'pan' class
+				.attr("id", "north");	//The ID will tell us which direction to head
+
+			north.append("rect")
+				.attr("x", 0)
+				.attr("y", 0)
+				.attr("width", w)
+				.attr("height", 30);
+
+			north.append("text")
+				.attr("x", w / 2)
+				.attr("y", 20)
+				.html("&uarr;");
+
+			//South
+			var south = svg1.append("g")
+				.attr("class", "pan")
+				.attr("id", "south");
+
+			south.append("rect")
+				.attr("x", 0)
+				.attr("y", h - 30)
+				.attr("width", w)
+				.attr("height", 30);
+
+			south.append("text")
+				.attr("x", w / 2)
+				.attr("y", h - 10)
+				.html("&darr;");
+
+			//West
+			var west = svg1.append("g")
+				.attr("class", "pan")
+				.attr("id", "west");
+
+			west.append("rect")
+				.attr("x", 0)
+				.attr("y", 30)
+				.attr("width", 30)
+				.attr("height", h + 40);
+
+			west.append("text")
+				.attr("x", 15)
+				.attr("y", h / 2)
+				.html("&larr;");
+
+			//East
+			var east = svg1.append("g")
+				.attr("class", "pan")
+				.attr("id", "east");
+
+			east.append("rect")
+				.attr("x", w - 30)
+				.attr("y", 30)
+				.attr("width", 30)
+				.attr("height", h - 60);
+
+			east.append("text")
+				.attr("x", w - 15)
+				.attr("y", h / 2)
+				.html("&rarr;");
+
+			//Panning interaction
+
+			d3.selectAll(".pan")
+				.on("click", function () {
+
+					//Set how much to move on each click
+					var moveAmount = 50;
+
+					//Set x/y to zero for now
+					var x = 0;
+					var y = 0;
+
+					//Which way are we headed?
+					var direction = d3.select(this).attr("id");
+
+					//Modify the offset, depending on the direction
+					switch (direction) {
+						case "north":
+							y += moveAmount;  //Increase y offset
+							break;
+						case "south":
+							y -= moveAmount;  //Decrease y offset
+							break;
+						case "west":
+							x += moveAmount;  //Increase x offset
+							break;
+						case "east":
+							x -= moveAmount;  //Decrease x offset
+							break;
+						default:
+							break;
+					}
+
+					//This triggers a zoom event, translating by x, y
+					map.transition()
+						.call(zoom.translateBy, x, y);
+
+				});
+
+		};
+
+		//Create zoom buttons
+		var createZoomButtons = function () {
+
+			//Create the clickable groups
+
+			//Zoom in button
+			var zoomIn = svg1.append("g")
+				.attr("class", "zoom")	//All share the 'zoom' class
+				.attr("id", "in")		//The ID will tell us which direction to head
+				.attr("transform", "translate(" + (402) + "," + (442) + ")");
+
+			zoomIn.append("rect")
+				.attr("x", 0)
+				.attr("y", 0)
+				.attr("width", 30)
+				.attr("height", 30);
+
+			zoomIn.append("text")
+				.attr("x", 15)
+				.attr("y", 20)
+				.text("+");
+
+			//Zoom out button
+			var zoomOut = svg1.append("g")
+				.attr("class", "zoom")
+				.attr("id", "out")
+				.attr("transform", "translate(" + (442) + "," + (442) + ")");
+
+			zoomOut.append("rect")
+				.attr("x", 0)
+				.attr("y", 0)
+				.attr("width", 30)
+				.attr("height", 30);
+
+			zoomOut.append("text")
+				.attr("x", 15)
+				.attr("y", 20)
+				.html("&ndash;");
+
+			//Zooming interaction
+
+			d3.selectAll(".zoom")
+				.on("click", function () {
+
+					//Set how much to scale on each click
+					var scaleFactor;
+
+					//Which way are we headed?
+					var direction = d3.select(this).attr("id");
+
+					//Modify the k scale value, depending on the direction
+					switch (direction) {
+						case "in":
+							scaleFactor = 1.5;
+							break;
+						case "out":
+							scaleFactor = 0.75;
+							break;
+						default:
+							break;
+					}
+
+					//This triggers a zoom event, scaling by 'scaleFactor'
+					map.transition()
+						.call(zoom.scaleBy, scaleFactor);
+
+				});
+
+
+			//On radio button change, update styling
+			d3.select("select")
+				.on("change", function (d) {
+					var selected = d3.select("#d3-dropdown").node().value;
+
+					updateMap(selected)
+				})
+
+		};
+
+		function updateMap(selectedDate) {
+			console.log(selectedDate)
+			var dataFilter = pJson.filter(function (d) { return d.date < selectedDate })
+
+			map.selectAll("circle")
+				.remove()
+
+			map.selectAll("circle")
+				.data(dataFilter)
+				.enter()
+				.append("circle")
+				.attr("cx", function (d) {
+					return projection([d.x, d.y])[0];
+				})
+				.attr("cy", function (d) {
+					return projection([d.x, d.y])[1];
+				})
+				.attr("r", 3)
+				.attr("fill", function (d, i) {
+						if(d.gender == 1){
+							return "rgb(" + d.age*2*50 + ", " + d.age*50 + ", " + d.age*50 + ")";
+						} else {
+							return "rgb(" + d.age*50 + ", " + d.age*50 + ", " + d.age*2*50 + ")";
+						}
+
+					})
+				.append("title")
+		}
+
+		//Width and height
+		var width = 880;
+		var height = 512;
+		var padding = 40;
+
+		var dataset, xScale, yScale, xAxis, yAxis;  //Empty, for now
+
+		//For converting strings to Dates
+		var parseTime = d3.timeParse("%m/%d/%y");
+
+		//For converting Dates to strings
+		var formatTime = d3.timeFormat("%B %e");
+
+		//Function for converting CSV values from strings to Dates and numbers
+		var rowConverter = function (d) {
+			return {
+				date: parseTime(d.date),
+				deaths: parseInt(d.deaths)
+			};
+		}
+
+		//Load in the data
+		d3.csv("deathdays.csv", rowConverter, function (data) {
+			//PonyTip
+			function update(selectedDate) {
+
+				console.log(selectedDate)
+
+				// Create new data with the selection?
+				var dataFilter = datasets.filter(function (d) { return d.date < selectedDate })
+
+				//console.log(dataFilter)
+
+				var svg = d3.select("#svg2").transition()
+
+				var startDate = d3.min(dataFilter, function (d) { return d.date; });
+				var endDate = d3.max(dataFilter, function (d) { return d.date; });
+
+				//Create scale functions
+				xScale = d3.scaleTime()
+					.domain([
+						d3.timeDay.offset(startDate, -1),  //startDate minus one day, for padding
+						d3.timeDay.offset(endDate, 1)	  //endDate plus one day, for padding
+					])
+					.range([padding, width - padding]);
+
+				yScale = d3.scaleLinear()
+					.domain([
+						0,  //Because I want a zero baseline
+						d3.max(dataFilter, function (d) { return d.deaths; })
+					])
+					.range([height - padding, padding]);
+
+				//Define X axis
+				xAxis = d3.axisBottom()
+					.scale(xScale)
+					.ticks(9)
+					.tickFormat(formatTime);
+
+				//Define Y axis
+				yAxis = d3.axisLeft()
+					.scale(yScale)
+					.ticks(10);
+
+				svg2.selectAll("rect")
+					.remove()
+
+				svg2.selectAll("text")
+					.remove()
+
+				svg2.selectAll("#tooltip")
+					.remove()
+
+				var bars = svg2.selectAll(".bar")
+					.data(dataFilter)
+
+				// Give these new data to update line
+				bars.enter()
+					.append("rect")
+					.attr("x", function (d) {
+						return xScale(d.date);
+					})
+					.attr("y", function (d) {
+						return yScale(d.deaths);
+					})
+					.attr("width", width / dataFilter.length)
+					.attr("height", function (d) {
+						return height - yScale(d.deaths) - padding;
+					})
+					.attr("fill", function (d) {
+						return "rgb(0 , " + (255 - (d.deaths)) + ", 0)";
+					})
+					.on("click", function (d) {
+						update(d.date)
+					})
+					.on("mouseover", function (d) {
+
+					//Get this bar's x/y values, then augment for the tooltip
+					var xPosition = parseFloat(d3.select(this).attr("x")) + width / data.length / 2 + 512;
+					var yPosition = parseFloat(d3.select(this).attr("y")) / 2 + height / 2;
+
+					//Update the tooltip position and value
+					d3.select("#tooltip")
+						.style("left", xPosition + "px")
+						.style("top", yPosition + "px")
+						.select("#date")
+						.text(formatTime(d.date));
+
+					//Show the tooltip
+					d3.select("#tooltip").classed("hidden", false);
+
+				})
+				.on("mouseout", function () {
+
+					//Hide the tooltip
+					d3.select("#tooltip").classed("hidden", true);
+
+				})
+				//PonyTip
+				.on("click", function (d) {
+					//Hide the tooltip
+					d3.select("#tooltip").classed("hidden", true);
+
+					var format = d3.timeFormat("%m/%d/%Y");
+
+					console.log(format(d.date));
+
+					update(d.date);
+
+					updateMap(format(d.date))
+				})
+
+				bars.enter()
+					.append("text")
+					.text(function (d) {
+						return parseInt(d.deaths);
+					})
+					.attr("text-anchor", "middle")
+					.attr("x", function (d) {
+						return xScale(d.date) + (width / datasets.length) + ((width / datasets.length) / 2);
+					})
+					.attr("y", function (d) {
+						return yScale(d.deaths) - 14;
+					})
+					.attr("font-family", "sans-serif")
+					.attr("font-size", "11px")
+					.attr("fill", "black");
+
+			}
+
+
+			//Copy data into global dataset
+			dataset = data
+			//PonyTip
+			var datasets = data
+
+			//PonyTip
+			//var temp = new Date("09/22/19")
+			//dataset = data.filter(function (d) { return d.date > temp; })
+
+			//Discover start and end dates in dataset
+			var startDate = d3.min(dataset, function (d) { return d.date; });
+			var endDate = d3.max(dataset, function (d) { return d.date; });
+
+			//Create scale functions
+			xScale = d3.scaleTime()
+				.domain([
+					d3.timeDay.offset(startDate, -1),  //startDate minus one day, for padding
+					d3.timeDay.offset(endDate, 1)	  //endDate plus one day, for padding
+				])
+				.range([padding, width - padding]);
+
+			yScale = d3.scaleLinear()
+				.domain([
+					0,  //Because I want a zero baseline
+					d3.max(dataset, function (d) { return d.deaths; })
+				])
+				.range([height - padding, padding]);
+
+			//Define X axis
+			xAxis = d3.axisBottom()
+				.scale(xScale)
+				.ticks(9)
+				.tickFormat(formatTime);
+
+			//Define Y axis
+			yAxis = d3.axisLeft()
+				.scale(yScale)
+				.ticks(10);
+
+			//Create SVG element
+			var svg2 = d3.select("#svg2")
+
+			svg2.append("svg")
+				.attr("width", width)
+				.attr("height", height);
+
+			//Generate guide lines
+			svg2.selectAll(".bar")
+				.data(dataset)
+				.enter()
+				.append("rect")
+				.attr("x", function (d) {
+					return xScale(d.date);
+				})
+				.attr("y", function (d) {
+					return yScale(d.deaths);
+				})
+				.attr("width", (width / data.length) - 2)
+				.attr("height", function (d) {
+					return height - yScale(d.deaths) - padding;
+				})
+				.attr("fill", function (d) {
+					return "rgb(0 , " + (255 - (d.deaths)) + ", 0)";
+				})
+
+
+				.on("mouseover", function (d) {
+
+					//Get this bar's x/y values, then augment for the tooltip
+					var xPosition = parseFloat(d3.select(this).attr("x")) + width / data.length / 2 + 512;
+					var yPosition = parseFloat(d3.select(this).attr("y")) / 2 + height / 2;
+
+					//Update the tooltip position and value
+					d3.select("#tooltip")
+						.style("left", xPosition + "px")
+						.style("top", yPosition + "px")
+						.select("#date")
+						.text(formatTime(d.date));
+
+					//Show the tooltip
+					d3.select("#tooltip").classed("hidden", false);
+
+				})
+				.on("mouseout", function () {
+
+					//Hide the tooltip
+					d3.select("#tooltip").classed("hidden", true);
+
+				})
+				//PonyTip
+				.on("click", function (d) {
+					//Hide the tooltip
+					d3.select("#tooltip").classed("hidden", true);
+
+					var format = d3.timeFormat("%m/%d/%Y");
+
+					console.log(format(d.date));
+
+					update(d.date);
+
+					updateMap(format(d.date))
+				})
+
+			svg2.selectAll("text")
+				.data(dataset)
+				.enter()
+				.append("text")
+				.text(function (d) {
+					return parseInt(d.deaths);
+				})
+				.attr("text-anchor", "middle")
+				.attr("x", function (d) {
+					return xScale(d.date) + ((width / dataset.length) / 2) - 2;
+				})
+				.attr("y", function (d) {
+					return yScale(d.deaths) - 14;
+				})
+				.attr("font-family", "sans-serif")
+				.attr("font-size", "11px")
+				.attr("fill", "black");
+
+			//Create X axis
+			svg2.append("g")
+				.attr("class", "axis")
+				.attr("transform", "translate(0," + (height - padding) + ")")
+				.call(xAxis);
+
+			//Create Y axis
+			svg2.append("g")
+				.attr("class", "yxis")
+				.attr("transform", "translate(" + padding + ",0)")
+				.call(yAxis);
+
+		});
+
+		//Width and height
+		var w1 = 150;
+		var h1 = 250;
+		var dataset, x1Scale, y1Scale, x1Axis, y1Axis;
+
+		d3.csv("gender-gender.csv", function (data) {
+			dataset = data;
+
+			x1Scale = d3.scaleBand()
+				.domain([
+					d3.min(dataset, function (d) { return d.gender; }),
+					d3.max(dataset, function (d) { return d.gender; })
+				])
+				.rangeRound([0, 100])
+				.paddingInner(0.05);
+
+
+			y1Scale = d3.scaleLinear()
+				.domain([0, 300])
+				.range([210, 40]);
+			//Define X axis
+			x1Axis = d3.axisBottom()
+				.scale(x1Scale)
+				.ticks(2)
+				.tickFormat(function (d) { return dataset[d].gender1; });
+
+			//Define Y axis
+			y1Axis = d3.axisLeft()
+				.scale(y1Scale)
+				.ticks(3);
+
+			//Create SVG element
+			var svg3 = d3.select("#svg3")
+				.append("svg")
+				.attr("width", w1)
+				.attr("height", h1);
+
+			//Create bars
+			svg3.selectAll("rect")
+				.data(dataset)
+				.enter()
+				.append("rect")
+				.attr("x", function (d, i) {
+					return x1Scale(i) + padding;
+				})
+				.attr("y", function (d) {
+					return y1Scale(d.number);
+				})
+				.attr("width", x1Scale.bandwidth())
+				.attr("height", function (d) {
+					return h1 - y1Scale(d.number) - padding - 5;
+				})
+				.attr("fill", function (d, i) {
+						if(d.gender == 1){
+							return "rgb(255,0,0)";
+						} else {
+							return "rgb(0,0,255)";
+						}
+
+					})
+
+			//Create labels
+			svg3.selectAll("text")
+				.data(dataset)
+				.enter()
+				.append("text")
+				.text(function (d) {
+					return d.number;
+				})
+				.attr("text-anchor", "middle")
+				.attr("x", function (d) {
+					return (x1Scale(d.gender) + x1Scale.bandwidth() / 2) + padding;
+				})
+				.attr("y", function (d) {
+					return y1Scale(d.number) - 14;
+				})
+				.attr("font-family", "sans-serif")
+				.attr("font-size", "11px")
+				.attr("fill", "black");
+
+			//Create X axis
+			svg3.append("g")
+				.attr("class", "axis")
+				.attr("transform", "translate(" + padding + "," + (h1 - padding - 5) + ")")
+				.call(x1Axis);
+
+			//Create Y axis
+			svg3.append("g")
+				.attr("class", "axis")
+				.attr("transform", "translate(" + padding + "," + -5 + ")")
+				.call(y1Axis);
+		});
+		//Width and height
+		var w2 = 350;
+		var h2 = 250;
+
+		//Width and height
+		var dataset, x2Scale, y2Scale, x2Axis, y2Axis;
+
+		d3.csv("age-age.csv", function (data) {
+			dataset = data;
+
+			x2Scale = d3.scaleBand()
+				.domain(d3.range(dataset.length))
+				.rangeRound([0, 300])
+				.paddingInner(0.05);
+
+
+			y2Scale = d3.scaleLinear()
+				.domain([0, 200])
+				.range([210, 40]);
+			//Define X axis
+			x2Axis = d3.axisBottom()
+				.scale(x2Scale)
+				.ticks(6)
+				.tickFormat(function (d) { return dataset[d].age1; });
+
+			//Define Y axis
+			y2Axis = d3.axisLeft()
+				.scale(y2Scale)
+				.ticks(3);
+
+			//Create SVG element
+			var svg4 = d3.select("#svg4")
+				.append("svg")
+				.attr("width", w2)
+				.attr("height", h2);
+
+			//Create bars
+			svg4.selectAll("rect")
+				.data(dataset)
+				.enter()
+				.append("rect")
+				.attr("x", function (d, i) {
+					return x2Scale(i) + padding;
+				})
+				.attr("y", function (d) {
+					return y2Scale(d.number);
+				})
+				.attr("width", x2Scale.bandwidth())
+				.attr("height", function (d) {
+					return h2 - y2Scale(d.number) - padding - 5;
+				})
+				.attr("fill", function (d, i) {
+					return "rgb(" + x2Scale(i) + ", " + x2Scale(i) + ", " + x2Scale(i) + ")";
+				});
+
+			//Create labels
+			svg4.selectAll("text")
+				.data(dataset)
+				.enter()
+				.append("text")
+				.text(function (d) {
+					return d.number;
+				})
+				.attr("text-anchor", "middle")
+				.attr("x", function (d) {
+					return (x2Scale(d.age) + x2Scale.bandwidth() / 2) + padding;
+				})
+				.attr("y", function (d) {
+					return y2Scale(d.number) - 14;
+				})
+				.attr("font-family", "sans-serif")
+				.attr("font-size", "11px")
+				.attr("fill", "black");
+
+			//Create X axis
+			svg4.append("g")
+				.attr("class", "axis")
+				.attr("transform", "translate(" + padding + "," + (h2 - padding - 5) + ")")
+				.call(x2Axis);
+
+			//Create Y axis
+			svg4.append("g")
+				.attr("class", "axis")
+				.attr("transform", "translate(" + padding + "," + -5 + ")")
+				.call(y2Axis);
+		});
+
+		//Width and height
+		var w3 = 350;
+		var h3 = 250;
+
+		//Width and height
+		var dataset, x3Scale, y3Scale, x3Axis, y3Axis;
+
+		d3.csv("gender&age-gender & age.csv", function (data) {
+			dataset = data;
+
+			x3Scale = d3.scaleBand()
+				.domain(d3.range(dataset.length))
+				.rangeRound([0, 300])
+				.paddingInner(0.05);
+
+
+			y3Scale = d3.scaleLinear()
+				.domain([0, 100])
+				.range([210, 40]);
+			//Define X axis
+			x3Axis = d3.axisBottom()
+				.scale(x3Scale)
+				.ticks(6)
+				.tickFormat(function (d) { return dataset[d].age1; });
+
+			//Define Y axis
+			y3Axis = d3.axisLeft()
+				.scale(y3Scale)
+				.ticks(5);
+
+			//Create SVG element
+			var svg5 = d3.select("#svg5")
+				.append("svg")
+				.attr("width", w3)
+				.attr("height", h3);
+
+			//Create bars
+			svg5.selectAll("rect")
+				.data(dataset)
+				.enter()
+				.append("rect")
+				.attr("x", function (d, i) {
+					return x3Scale(i) + padding;
+				})
+				.attr("y", function (d) {
+					return y3Scale(d.male);
+				})
+				.attr("width", x3Scale.bandwidth())
+				.attr("height", function (d) {
+					return h3 - y3Scale(d.male) - padding - 5;
+				})
+				.attr("fill", function (d, i) {
+					return "rgb(" + x3Scale(i) + ", " + x3Scale(i) + ", " + x3Scale(i)*2 + ")";
+				});
+
+			//Create labels
+			svg5.selectAll("text")
+				.data(dataset)
+				.enter()
+				.append("text")
+				.text(function (d) {
+					return d.male;
+				})
+				.attr("text-anchor", "middle")
+				.attr("x", function (d) {
+					return (x3Scale(d.age) + x3Scale.bandwidth() / 2) + padding;
+				})
+				.attr("y", function (d) {
+					return y3Scale(d.male) - 14;
+				})
+				.attr("font-family", "sans-serif")
+				.attr("font-size", "11px")
+				.attr("fill", "black");
+
+			//Create X axis
+			svg5.append("g")
+				.attr("class", "axis")
+				.attr("transform", "translate(" + padding + "," + (h3 - padding - 5) + ")")
+				.call(x3Axis);
+
+			//Create Y axis
+			svg5.append("g")
+				.attr("class", "axis")
+				.attr("transform", "translate(" + padding + "," + -5 + ")")
+				.call(y3Axis);
+		});
+
+		//Width and height
+		var w4 = 350;
+		var h4 = 250;
+
+		//Width and height
+		var dataset, x4Scale, y4Scale, x4Axis, y4Axis;
+
+		d3.csv("gender&age-gender & age.csv", function (data) {
+			dataset = data;
+
+			x4Scale = d3.scaleBand()
+				.domain(d3.range(dataset.length))
+				.rangeRound([0, 300])
+				.paddingInner(0.05);
+
+
+			y4Scale = d3.scaleLinear()
+				.domain([0, 100])
+				.range([210, 40]);
+			//Define X axis
+			x4Axis = d3.axisBottom()
+				.scale(x4Scale)
+				.ticks(6)
+				.tickFormat(function (d) { return dataset[d].age1; });
+
+			//Define Y axis
+			y4Axis = d3.axisLeft()
+				.scale(y4Scale)
+				.ticks(5);
+
+			//Create SVG element
+			var svg6 = d3.select("#svg6")
+				.append("svg")
+				.attr("width", w4)
+				.attr("height", h4);
+
+			//Create bars
+			svg6.selectAll("rect")
+				.data(dataset)
+				.enter()
+				.append("rect")
+				.attr("x", function (d, i) {
+					return x4Scale(i) + padding;
+				})
+				.attr("y", function (d) {
+					return y4Scale(d.Female);
+				})
+				.attr("width", x4Scale.bandwidth())
+				.attr("height", function (d) {
+					return h4 - y4Scale(d.Female) - padding - 5;
+				})
+				.attr("fill", function (d, i) {
+					return "rgb(" + x4Scale(i)*2 + ", " + x4Scale(i) + ", " + x4Scale(i) + ")";
+				});
+
+			//Create labels
+			svg6.selectAll("text")
+				.data(dataset)
+				.enter()
+				.append("text")
+				.text(function (d) {
+					return d.male;
+				})
+				.attr("text-anchor", "middle")
+				.attr("x", function (d) {
+					return (x4Scale(d.age) + x4Scale.bandwidth() / 2) + padding;
+				})
+				.attr("y", function (d) {
+					return y4Scale(d.Female) - 14;
+				})
+				.attr("font-family", "sans-serif")
+				.attr("font-size", "11px")
+				.attr("fill", "black");
+
+			//Create X axis
+			svg6.append("g")
+				.attr("class", "axis")
+				.attr("transform", "translate(" + padding + "," + (h4 - padding - 5) + ")")
+				.call(x4Axis);
+
+			//Create Y axis
+			svg6.append("g")
+				.attr("class", "axis")
+				.attr("transform", "translate(" + padding + "," + -5 + ")")
+				.call(y4Axis);
+		});
+
+	</script>
+
 </body>
 
 </html>
