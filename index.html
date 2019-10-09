@@ -80,7 +80,8 @@
 		</div>
 		<div style="float: right;">
 			<h3>By Date</h3>
-		    <svg width="880" height="512" id="svg2"></svg>
+		    <svg width="800" height="512" id="svg2"></svg>
+		    <input type="button" value="Reset" id="reset">
 		</div>
 	</div>
 	<div style="float: left;">
@@ -110,6 +111,8 @@
 		var h = 512;
 
 		var pJson
+
+		var originDataset
 
 		//Define map projection
 		var projection = d3.geoMercator()
@@ -440,7 +443,15 @@
 
 		function updateMap(selectedDate) {
 			console.log(selectedDate)
-			var dataFilter = pJson.filter(function (d) { return d.date < selectedDate })
+
+			var dataFilter = pJson
+
+			//dataFilter = pJson.filter(function (d) { return d.date < selectedDate })
+
+			dataFilter = pJson.filter(function (d) {
+				if (selectedDate == null) { return 1 < 2 }
+				else { return d.date < selectedDate }
+			})
 
 			map.selectAll("circle")
 				.remove()
@@ -458,9 +469,9 @@
 				.attr("r", 3)
 				.attr("fill", function (d, i) {
 						if(d.gender == 1){
-							return "rgb(" + d.age*2*50 + ", " + d.age*50 + ", " + d.age*50 + ")";
+							return "rgb(" + d.age*2*40 + ", " + d.age*40 + ", " + d.age*40 + ")";
 						} else {
-							return "rgb(" + d.age*50 + ", " + d.age*50 + ", " + d.age*2*50 + ")";
+							return "rgb(" + d.age*40 + ", " + d.age*40 + ", " + d.age*2*40 + ")";
 						}
 
 					})
@@ -468,7 +479,7 @@
 		}
 
 		//Width and height
-		var width = 880;
+		var width = 800;
 		var height = 512;
 		var padding = 40;
 
@@ -535,9 +546,6 @@
 					.remove()
 
 				svg2.selectAll("text")
-					.remove()
-
-				svg2.selectAll("#tooltip")
 					.remove()
 
 				var bars = svg2.selectAll(".bar")
@@ -617,11 +625,131 @@
 
 			}
 
+            function init() {
 
-			//Copy data into global dataset
-			dataset = data
-			//PonyTip
-			var datasets = data
+				svg2.selectAll("rect")
+					.remove()
+
+				svg2.selectAll("text")
+					.remove()
+
+				var startDate = d3.min(dataset, function (d) { return d.date; });
+				var endDate = d3.max(dataset, function (d) { return d.date; });
+
+				//Create scale functions
+				xScale = d3.scaleTime()
+					.domain([
+						d3.timeDay.offset(startDate, -1),  //startDate minus one day, for padding
+						d3.timeDay.offset(endDate, 1)	  //endDate plus one day, for padding
+					])
+					.range([padding, width - padding]);
+
+				yScale = d3.scaleLinear()
+					.domain([
+						0,  //Because I want a zero baseline
+						d3.max(dataset, function (d) { return d.deaths; })
+					])
+					.range([height - padding, padding]);
+
+				//Define X axis
+				xAxis = d3.axisBottom()
+					.scale(xScale)
+					.ticks(9)
+					.tickFormat(formatTime);
+
+				//Define Y axis
+				yAxis = d3.axisLeft()
+					.scale(yScale)
+					.ticks(10);
+
+				svg2.append("svg")
+					.attr("width", width)
+					.attr("height", height);
+
+				//Generate guide lines
+				svg2.selectAll(".bar")
+					.data(dataset)
+					.enter()
+					.append("rect")
+					.attr("x", function (d) {
+						return xScale(d.date);
+					})
+					.attr("y", function (d) {
+						return yScale(d.deaths);
+					})
+					.attr("width", (width / data.length) - 2)
+					.attr("height", function (d) {
+						return height - yScale(d.deaths) - padding;
+					})
+					.attr("fill", function (d) {
+						return "rgb(0 , " + (255 - (d.deaths)) + ", 0)";
+					})
+
+
+					.on("mouseover", function (d) {
+
+						//Get this bar's x/y values, then augment for the tooltip
+						var xPosition = parseFloat(d3.select(this).attr("x")) + width / data.length / 2 + 512;
+						var yPosition = parseFloat(d3.select(this).attr("y")) / 2 + height / 2;
+
+						//Update the tooltip position and value
+						d3.select("#tooltip")
+							.style("left", xPosition + "px")
+							.style("top", yPosition + "px")
+							.select("#date")
+							.text(formatTime(d.date));
+
+						//Show the tooltip
+						d3.select("#tooltip").classed("hidden", false);
+
+					})
+					.on("mouseout", function () {
+
+						//Hide the tooltip
+						d3.select("#tooltip").classed("hidden", true);
+
+					})
+					//PonyTip
+					.on("click", function (d) {
+
+						var format = d3.timeFormat("%m/%d/%Y");
+
+						console.log(format(d.date));
+
+						update(d.date);
+
+						updateMap(format(d.date))
+					})
+
+				svg2.selectAll("text")
+					.data(dataset)
+					.enter()
+					.append("text")
+					.text(function (d) {
+						return parseInt(d.deaths);
+					})
+					.attr("text-anchor", "middle")
+					.attr("x", function (d) {
+						return xScale(d.date) + ((width / dataset.length) / 2) - 2;
+					})
+					.attr("y", function (d) {
+						return yScale(d.deaths) - 14;
+					})
+					.attr("font-family", "sans-serif")
+					.attr("font-size", "11px")
+					.attr("fill", "black");
+
+
+				
+						}
+
+			function init() {
+
+				svg2.selectAll("rect")
+					.remove()
+
+				svg2.selectAll("text")
+					.remove()
 
 			//PonyTip
 			//var temp = new Date("09/22/19")
@@ -656,9 +784,6 @@
 			yAxis = d3.axisLeft()
 				.scale(yScale)
 				.ticks(10);
-
-			//Create SVG element
-			var svg2 = d3.select("#svg2")
 
 			svg2.append("svg")
 				.attr("width", width)
@@ -709,8 +834,6 @@
 				})
 				//PonyTip
 				.on("click", function (d) {
-					//Hide the tooltip
-					d3.select("#tooltip").classed("hidden", true);
 
 					var format = d3.timeFormat("%m/%d/%Y");
 
@@ -750,6 +873,28 @@
 				.attr("class", "yxis")
 				.attr("transform", "translate(" + padding + ",0)")
 				.call(yAxis);
+			}
+
+			//Create SVG element
+			var svg2 = d3.select("#svg2")
+
+			//Copy data into global dataset
+			dataset = data
+
+			var datasets = data
+
+			originDataset = data
+
+			d3.select("input")
+				.on("click", function (d) {
+					//var selected = d3.select("#d3-dropdown").node().value;
+					dataset = originDataset
+					init()
+					updateMap()
+				})
+
+			//Discover start and end dates in dataset
+			init()
 
 		});
 
