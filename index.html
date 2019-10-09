@@ -633,6 +633,9 @@
 				svg2.selectAll("text")
 					.remove()
 
+				svg2.selectAll("#tooltip")
+					.remove()
+
 				var startDate = d3.min(dataset, function (d) { return d.date; });
 				var endDate = d3.max(dataset, function (d) { return d.date; });
 
@@ -842,6 +845,8 @@
 					update(d.date);
 
 					updateMap(format(d.date))
+					//Hide the tooltip
+					d3.select("#tooltip").classed("hidden", true);
 				})
 
 			svg2.selectAll("text")
