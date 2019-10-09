@@ -66,7 +66,7 @@
 			line-height: 20px;
 		}
 
-		h3{
+		h3 {
 			font-family: sans-serif;
 		}
 	</style>
@@ -80,8 +80,8 @@
 		</div>
 		<div style="float: right;">
 			<h3>By Date</h3>
-		    <svg width="800" height="512" id="svg2"></svg>
-		    <input type="button" value="Reset" id="reset">
+			<svg width="800" height="512" id="svg2"></svg>
+			<input type="button" value="Reset" id="reset">
 		</div>
 	</div>
 	<div style="float: left;">
@@ -103,23 +103,45 @@
 	<div>
 		<a href="">https://www.youtube.com/watch?v=pAWP7AFtfPo&feature=youtu.be</a>
 		<h3>Design Process</h3>
-		<p>After reading the judging criteria, I could know that the final screen would be at least a dashboard including a map and a timeline chart. Then I considered the additional graphs showing the distribution of deaths by sex and age overall, so I added the overall charts for gender and age. So far there is one map with three charts. To perform different variations like age and gender, I added two charts to illustrate the male and female victims on the map with the same colors. Therefore my final dashboard is an interactive map with a timeline chart, and below are four additional charts to show the deaths by gender, age, male and female.</p>
+		<p>After reading the judging criteria, I could know that the final screen would be at least a dashboard
+			including a map and a timeline chart. Then I considered the additional graphs showing the distribution of
+			deaths by sex and age overall, so I added the overall charts for gender and age. So far there is one map
+			with three charts. To perform different variations like age and gender, I added two charts to illustrate the
+			male and female victims on the map with the same colors. Therefore my final dashboard is an interactive map
+			with a timeline chart, and below are four additional charts to show the deaths by gender, age, male and
+			female.</p>
 		<h3>Design Choices</h3>
-		<p>At first, I use color to differentiate y value. As you can see in the By Date chart, in general, the color is green, but the lightness is decreasing when y value is increasing. However, when I started drawing the map first, I realized that the ability to easily see on the map whether each victim was male or female and the age of each victim are two keys for designing this dashboard. For presenting the gender, I decided to use red to represent females and blue for males. Speaking of age, I chose different lightness. The reason is that gender is not a key factor to impact the victims at the early and late stages of their lives. That is my hypothesis. Based on this hypothesis, I applied the color in this principle except for the charts that show deaths by date. In this chart, I maintained my initial design by using color to differentiate y value.<br>Considering the color blindness people, I only use three RGB color model for display. You can see in the below are the perspective of different types of blindness people. It should be no difficulty distinguishing the deaths in the charts no matter they are sort by gender, age or date.</p>
+		<p>At first, I use color to differentiate y value. As you can see in the By Date chart, in general, the color is
+			green, but the lightness is decreasing when y value is increasing. However, when I started drawing the map
+			first, I realized that the ability to easily see on the map whether each victim was male or female and the
+			age of each victim are two keys for designing this dashboard. For presenting the gender, I decided to use
+			red to represent females and blue for males. Speaking of age, I chose different lightness. The reason is
+			that gender is not a key factor to impact the victims at the early and late stages of their lives. That is
+			my hypothesis. Based on this hypothesis, I applied the color in this principle except for the charts that
+			show deaths by date. In this chart, I maintained my initial design by using color to differentiate y
+			value.<br>Considering the color blindness people, I only use three RGB color model for display. You can see
+			in the below are the perspective of different types of blindness people. It should be no difficulty
+			distinguishing the deaths in the charts no matter they are sort by gender, age or date.</p>
 		<img src="Deuteranopia.png" width="450">
 		<img src="Protanopia.png" width="450">
 		<img src="Tritanopia.png" width="450">
 		<h3>Findings</h3>
-		<p>As we can see, victims are highly concentrated around the blocks along Broad Street. But one thing worth noting is that the Brewery and it's neighbor block show no victim here, which is very peculiar. Besides, we could also find out that all the victims are focusing on the pumps, which could be key evidence indicates that water is the source of cholera.</p>
+		<p>As we can see, victims are highly concentrated around the blocks along Broad Street. But one thing worth
+			noting is that the Brewery and it's neighbor block show no victim here, which is very peculiar. Besides, we
+			could also find out that all the victims are focusing on the pumps, which could be key evidence indicates
+			that water is the source of cholera.</p>
 		<img src="Dr. John Snow's map of London's 1854 cholera epidemic.png" width="480">
-		<p>In chronological order of maps, you can find that there is no difference between the age or gender of the victims during the outbreak.</p>
+		<p>In chronological order of maps, you can find that there is no difference between the age or gender of the
+			victims during the outbreak.</p>
 		<img src="Aug 30.png" width="330">
 		<img src="Sep 1.png" width="330">
 		<img src="Sep 2.png" width="330">
-		<img src="Sep 29.png" width="330">		
-		<p>The following are the charts showing the distribution of deaths by date, sex, and age overall. We can see some insights:<br>
+		<img src="Sep 29.png" width="330">
+		<p>The following are the charts showing the distribution of deaths by date, sex, and age overall. We can see
+			some insights:<br>
 			<br>1. The cholera outbreak is around September 1.<br>
-			<br>2. There is no difference between the distribution of deaths by sex, just like we have discovered on the map.<br>
+			<br>2. There is no difference between the distribution of deaths by sex, just like we have discovered on the
+			map.<br>
 			<br>3. Age over 80 has the highest deaths and then is age 0-10.<br>
 			<br>4. There is no distinct age ranging pattern in different sex.</p>
 	</div>
@@ -137,9 +159,11 @@
 
 		var originDataset
 
+		var pumps
+
 		//Define map projection
 		var projection = d3.geoMercator()
-			.translate([0, 0])
+			.translate([0, 0]);
 
 		//Define path generator
 		var path = d3.geoPath()
@@ -178,16 +202,7 @@
 				.attr("cy", function (d) {
 					return projection([d.x, d.y])[1];
 				});
-
-			svg1.selectAll("rect")
-				.attr("x", function (d) {
-					return projection([d.x, d.y])[0];
-				})
-				.attr("y", function (d) {
-					return projection([d.x, d.y])[1];
-				});
-
-		}
+		};
 
 		//Then define the zoom behavior
 		var zoom = d3.zoom()
@@ -225,25 +240,6 @@
 				.style("fill", "#fff");
 
 			//Load in cities data
-			d3.csv("pumps.csv", function (data) {
-
-				map.selectAll("circle")
-					.data(data)
-					.enter()
-					.append("circle")
-					.attr("cx", function (d) {
-						return projection([d.x, d.y])[0];
-					})
-					.attr("cy", function (d) {
-						return projection([d.x, d.y])[1];
-					})
-					.attr("r", 6)
-					.style("fill", "orange")
-					.style("stroke", "yellow")
-					.append("title")			//Simple tooltip
-			});
-
-			//Load in cities data
 			d3.csv("map-deaths_age_sex.csv", function (data) {
 
 				pJson = data
@@ -260,20 +256,41 @@
 					})
 					.attr("r", 3)
 					.attr("fill", function (d, i) {
-						if(d.gender == 1){
-							return "rgb(" + d.age*2*40 + ", " + d.age*40 + ", " + d.age*40 + ")";
+						if (d.gender == 1) {
+							return "rgb(" + d.age * 2 * 40 + ", " + d.age * 40 + ", " + d.age * 40 + ")";
 						} else {
-							return "rgb(" + d.age*40 + ", " + d.age*40 + ", " + d.age*2*40 + ")";
+							return "rgb(" + d.age * 40 + ", " + d.age * 40 + ", " + d.age * 2 * 40 + ")";
 						}
 
 					})
-					.append("title")
-				//Simple tooltip
-				createPanButtons();
-				createZoomButtons();
-
+					.append("title");
 			});
-		})
+
+			//Load in cities data
+			d3.csv("pumps.csv", function (data) {
+
+				pumps = data;
+
+				map.selectAll("circle2")
+					.data(data)
+					.enter()
+					.append("circle")
+					.attr("cx", function (d) {
+						return projection([d.x, d.y])[0];
+					})
+					.attr("cy", function (d) {
+						return projection([d.x, d.y])[1];
+					})
+					.attr("r", 6)
+					.style("fill", "orange")
+					.style("stroke", "yellow")
+					.append("title");
+			});
+
+			//Simple tooltip
+			createPanButtons();
+			createZoomButtons();
+		});
 
 		//Create panning buttons
 		var createPanButtons = function () {
@@ -465,7 +482,7 @@
 		};
 
 		function updateMap(selectedDate) {
-			console.log(selectedDate)
+			//console.log(selectedDate)
 
 			var dataFilter = pJson
 
@@ -480,6 +497,22 @@
 				.remove()
 
 			map.selectAll("circle")
+				.data(pumps)
+				.enter()
+				.append("circle")
+				.attr("cx", function (d) {
+					return projection([d.x, d.y])[0];
+				})
+				.attr("cy", function (d) {
+					return projection([d.x, d.y])[1];
+				})
+				.attr("r", 6)
+				.style("fill", "orange")
+				.style("stroke", "yellow")
+				.append("title")
+
+
+			map.selectAll("circle")
 				.data(dataFilter)
 				.enter()
 				.append("circle")
@@ -491,13 +524,13 @@
 				})
 				.attr("r", 3)
 				.attr("fill", function (d, i) {
-						if(d.gender == 1){
-							return "rgb(" + d.age*2*40 + ", " + d.age*40 + ", " + d.age*40 + ")";
-						} else {
-							return "rgb(" + d.age*40 + ", " + d.age*40 + ", " + d.age*2*40 + ")";
-						}
+					if (d.gender == 1) {
+						return "rgb(" + d.age * 2 * 40 + ", " + d.age * 40 + ", " + d.age * 40 + ")";
+					} else {
+						return "rgb(" + d.age * 40 + ", " + d.age * 40 + ", " + d.age * 2 * 40 + ")";
+					}
 
-					})
+				})
 				.append("title")
 		}
 
@@ -595,40 +628,40 @@
 					})
 					.on("mouseover", function (d) {
 
-					//Get this bar's x/y values, then augment for the tooltip
-					var xPosition = parseFloat(d3.select(this).attr("x")) + width / data.length / 2 + 512;
-					var yPosition = parseFloat(d3.select(this).attr("y")) / 2 + height / 2;
+						//Get this bar's x/y values, then augment for the tooltip
+						var xPosition = parseFloat(d3.select(this).attr("x")) + width / data.length / 2 + 512;
+						var yPosition = parseFloat(d3.select(this).attr("y")) / 2 + height / 2;
 
-					//Update the tooltip position and value
-					d3.select("#tooltip")
-						.style("left", xPosition + "px")
-						.style("top", yPosition + "px")
-						.select("#date")
-						.text(formatTime(d.date));
+						//Update the tooltip position and value
+						d3.select("#tooltip")
+							.style("left", xPosition + "px")
+							.style("top", yPosition + "px")
+							.select("#date")
+							.text(formatTime(d.date));
 
-					//Show the tooltip
-					d3.select("#tooltip").classed("hidden", false);
+						//Show the tooltip
+						d3.select("#tooltip").classed("hidden", false);
 
-				})
-				.on("mouseout", function () {
+					})
+					.on("mouseout", function () {
 
-					//Hide the tooltip
-					d3.select("#tooltip").classed("hidden", true);
+						//Hide the tooltip
+						d3.select("#tooltip").classed("hidden", true);
 
-				})
-				//PonyTip
-				.on("click", function (d) {
-					//Hide the tooltip
-					d3.select("#tooltip").classed("hidden", true);
+					})
+					//PonyTip
+					.on("click", function (d) {
+						//Hide the tooltip
+						d3.select("#tooltip").classed("hidden", true);
 
-					var format = d3.timeFormat("%m/%d/%Y");
+						var format = d3.timeFormat("%m/%d/%Y");
 
-					console.log(format(d.date));
+						console.log(format(d.date));
 
-					update(d.date);
+						update(d.date);
 
-					updateMap(format(d.date))
-				})
+						updateMap(format(d.date))
+					})
 
 				bars.enter()
 					.append("text")
@@ -648,7 +681,7 @@
 
 			}
 
-            function init() {
+			function init() {
 
 				svg2.selectAll("rect")
 					.remove()
@@ -766,8 +799,8 @@
 					.attr("fill", "black");
 
 
-				
-						}
+
+			}
 
 			function init() {
 
@@ -777,130 +810,130 @@
 				svg2.selectAll("text")
 					.remove()
 
-			//PonyTip
-			//var temp = new Date("09/22/19")
-			//dataset = data.filter(function (d) { return d.date > temp; })
-
-			//Discover start and end dates in dataset
-			var startDate = d3.min(dataset, function (d) { return d.date; });
-			var endDate = d3.max(dataset, function (d) { return d.date; });
-
-			//Create scale functions
-			xScale = d3.scaleTime()
-				.domain([
-					d3.timeDay.offset(startDate, -1),  //startDate minus one day, for padding
-					d3.timeDay.offset(endDate, 1)	  //endDate plus one day, for padding
-				])
-				.range([padding, width - padding]);
-
-			yScale = d3.scaleLinear()
-				.domain([
-					0,  //Because I want a zero baseline
-					d3.max(dataset, function (d) { return d.deaths; })
-				])
-				.range([height - padding, padding]);
-
-			//Define X axis
-			xAxis = d3.axisBottom()
-				.scale(xScale)
-				.ticks(9)
-				.tickFormat(formatTime);
-
-			//Define Y axis
-			yAxis = d3.axisLeft()
-				.scale(yScale)
-				.ticks(10);
-
-			svg2.append("svg")
-				.attr("width", width)
-				.attr("height", height);
-
-			//Generate guide lines
-			svg2.selectAll(".bar")
-				.data(dataset)
-				.enter()
-				.append("rect")
-				.attr("x", function (d) {
-					return xScale(d.date);
-				})
-				.attr("y", function (d) {
-					return yScale(d.deaths);
-				})
-				.attr("width", (width / data.length) - 2)
-				.attr("height", function (d) {
-					return height - yScale(d.deaths) - padding;
-				})
-				.attr("fill", function (d) {
-					return "rgb(0 , " + (255 - (d.deaths)) + ", 0)";
-				})
-
-
-				.on("mouseover", function (d) {
-
-					//Get this bar's x/y values, then augment for the tooltip
-					var xPosition = parseFloat(d3.select(this).attr("x")) + width / data.length / 2 + 512;
-					var yPosition = parseFloat(d3.select(this).attr("y")) / 2 + height / 2;
-
-					//Update the tooltip position and value
-					d3.select("#tooltip")
-						.style("left", xPosition + "px")
-						.style("top", yPosition + "px")
-						.select("#date")
-						.text(formatTime(d.date));
-
-					//Show the tooltip
-					d3.select("#tooltip").classed("hidden", false);
-
-				})
-				.on("mouseout", function () {
-
-					//Hide the tooltip
-					d3.select("#tooltip").classed("hidden", true);
-
-				})
 				//PonyTip
-				.on("click", function (d) {
+				//var temp = new Date("09/22/19")
+				//dataset = data.filter(function (d) { return d.date > temp; })
 
-					var format = d3.timeFormat("%m/%d/%Y");
+				//Discover start and end dates in dataset
+				var startDate = d3.min(dataset, function (d) { return d.date; });
+				var endDate = d3.max(dataset, function (d) { return d.date; });
 
-					console.log(format(d.date));
+				//Create scale functions
+				xScale = d3.scaleTime()
+					.domain([
+						d3.timeDay.offset(startDate, -1),  //startDate minus one day, for padding
+						d3.timeDay.offset(endDate, 1)	  //endDate plus one day, for padding
+					])
+					.range([padding, width - padding]);
 
-					update(d.date);
+				yScale = d3.scaleLinear()
+					.domain([
+						0,  //Because I want a zero baseline
+						d3.max(dataset, function (d) { return d.deaths; })
+					])
+					.range([height - padding, padding]);
 
-					updateMap(format(d.date))
-					//Hide the tooltip
-					d3.select("#tooltip").classed("hidden", true);
-				})
+				//Define X axis
+				xAxis = d3.axisBottom()
+					.scale(xScale)
+					.ticks(9)
+					.tickFormat(formatTime);
 
-			svg2.selectAll("text")
-				.data(dataset)
-				.enter()
-				.append("text")
-				.text(function (d) {
-					return parseInt(d.deaths);
-				})
-				.attr("text-anchor", "middle")
-				.attr("x", function (d) {
-					return xScale(d.date) + ((width / dataset.length) / 2) - 2;
-				})
-				.attr("y", function (d) {
-					return yScale(d.deaths) - 14;
-				})
-				.attr("font-family", "sans-serif")
-				.attr("font-size", "11px")
-				.attr("fill", "black");
+				//Define Y axis
+				yAxis = d3.axisLeft()
+					.scale(yScale)
+					.ticks(10);
 
-			//Create X axis
-			svg2.append("g")
-				.attr("class", "axis")
-				.attr("transform", "translate(0," + (height - padding) + ")")
-				.call(xAxis);
+				svg2.append("svg")
+					.attr("width", width)
+					.attr("height", height);
 
-			//Create Y axis
-			svg2.append("g")
-				.attr("class", "yxis")
-				.attr("transform", "translate(" + padding + ",0)")
-				.call(yAxis);
+				//Generate guide lines
+				svg2.selectAll(".bar")
+					.data(dataset)
+					.enter()
+					.append("rect")
+					.attr("x", function (d) {
+						return xScale(d.date);
+					})
+					.attr("y", function (d) {
+						return yScale(d.deaths);
+					})
+					.attr("width", (width / data.length) - 2)
+					.attr("height", function (d) {
+						return height - yScale(d.deaths) - padding;
+					})
+					.attr("fill", function (d) {
+						return "rgb(0 , " + (255 - (d.deaths)) + ", 0)";
+					})
+
+
+					.on("mouseover", function (d) {
+
+						//Get this bar's x/y values, then augment for the tooltip
+						var xPosition = parseFloat(d3.select(this).attr("x")) + width / data.length / 2 + 512;
+						var yPosition = parseFloat(d3.select(this).attr("y")) / 2 + height / 2;
+
+						//Update the tooltip position and value
+						d3.select("#tooltip")
+							.style("left", xPosition + "px")
+							.style("top", yPosition + "px")
+							.select("#date")
+							.text(formatTime(d.date));
+
+						//Show the tooltip
+						d3.select("#tooltip").classed("hidden", false);
+
+					})
+					.on("mouseout", function () {
+
+						//Hide the tooltip
+						d3.select("#tooltip").classed("hidden", true);
+
+					})
+					//PonyTip
+					.on("click", function (d) {
+
+						var format = d3.timeFormat("%m/%d/%Y");
+
+						console.log(format(d.date));
+
+						update(d.date);
+
+						updateMap(format(d.date))
+						//Hide the tooltip
+						d3.select("#tooltip").classed("hidden", true);
+					})
+
+				svg2.selectAll("text")
+					.data(dataset)
+					.enter()
+					.append("text")
+					.text(function (d) {
+						return parseInt(d.deaths);
+					})
+					.attr("text-anchor", "middle")
+					.attr("x", function (d) {
+						return xScale(d.date) + ((width / dataset.length) / 2) - 2;
+					})
+					.attr("y", function (d) {
+						return yScale(d.deaths) - 14;
+					})
+					.attr("font-family", "sans-serif")
+					.attr("font-size", "11px")
+					.attr("fill", "black");
+
+				//Create X axis
+				svg2.append("g")
+					.attr("class", "axis")
+					.attr("transform", "translate(0," + (height - padding) + ")")
+					.call(xAxis);
+
+				//Create Y axis
+				svg2.append("g")
+					.attr("class", "yxis")
+					.attr("transform", "translate(" + padding + ",0)")
+					.call(yAxis);
 			}
 
 			//Create SVG element
@@ -979,13 +1012,13 @@
 					return h1 - y1Scale(d.number) - padding - 5;
 				})
 				.attr("fill", function (d, i) {
-						if(d.gender == 1){
-							return "rgb(255,0,0)";
-						} else {
-							return "rgb(0,0,255)";
-						}
+					if (d.gender == 1) {
+						return "rgb(255,0,0)";
+					} else {
+						return "rgb(0,0,255)";
+					}
 
-					})
+				})
 
 			//Create labels
 			svg3.selectAll("text")
@@ -1157,7 +1190,7 @@
 					return h3 - y3Scale(d.male) - padding - 5;
 				})
 				.attr("fill", function (d, i) {
-					return "rgb(" + x3Scale(i) + ", " + x3Scale(i) + ", " + x3Scale(i)*2 + ")";
+					return "rgb(" + x3Scale(i) + ", " + x3Scale(i) + ", " + x3Scale(i) * 2 + ")";
 				});
 
 			//Create labels
@@ -1244,7 +1277,7 @@
 					return h4 - y4Scale(d.Female) - padding - 5;
 				})
 				.attr("fill", function (d, i) {
-					return "rgb(" + x4Scale(i)*2 + ", " + x4Scale(i) + ", " + x4Scale(i) + ")";
+					return "rgb(" + x4Scale(i) * 2 + ", " + x4Scale(i) + ", " + x4Scale(i) + ")";
 				});
 
 			//Create labels
